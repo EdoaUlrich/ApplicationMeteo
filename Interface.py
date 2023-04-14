@@ -2,7 +2,6 @@ from os import times
 from tkinter import *
 from tkinter import messagebox
 import tkinter.ttk as tk
-from netCDF4 import Dataset
 from Data import *
 from VueGlobale import *
 from VueLocale import *

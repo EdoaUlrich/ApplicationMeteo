@@ -20,19 +20,6 @@ class Data:
             self.vals = dataset.variables['precip'][:]
         self.mask = None
         
-        self.chargement_masque()
-        
-    
-    def chargement_masque(self):
-        #self.mask = ma.masked_where(not ma.is_masked(self.vals[0]),self.vals[0])
-        """
-        self.mask = np.array([[True]*len(self.lons) for i in range(len(self.lats))])
-        for i, lat in enumerate(self.lats):
-            for j, lon in enumerate(self.lons):
-                if ma.is_masked(self.vals[0][i][j]):
-                    self.mask[i][j] = 
-        """
-        self.mask = np.ma.getmask(self.vals)
     
         
         
