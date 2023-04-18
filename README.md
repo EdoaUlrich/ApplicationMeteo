@@ -1,9 +1,14 @@
 # Application_Meteo
+# Auteur: Hubert EDOA
+# Tâches réalisé:
+# - Toutes les fonctions de bases du projet ont été réalisées.
+# - Aucun Bonus
+
 Cette application a été créée dans le but de visualiser les différentres variations de températures et precipitations entre les différentes coordonnées du globe terrestre.
 Afin de pouvoir compiler efficacement notre programe, il est necessaire de créer un dossier nommé "donnees" dans le même repertoire que nos fichiers sources. Celui-ci contiendra, les fichiers contenants nos données qui seront visualisées. Vous trouverez ces données sur les liens suivants:
 - Températures: https://downloads.psl.noaa.gov/Datasets/cpc_global_temp/
 - Précipitations: https://downloads.psl.noaa.gov/Datasets/cpc_global_precip/
-Il est necessaire de télécharger des fichiers spécifiques à unique année.
+Il est necessaire de télécharger des fichiers spécifiques à unique année!!!!!!!!!!!!!!!!!
 
 En plus des fichiers de données, il est important que vous installiez un ensemble de module sur votre ordinateur:
 - Cartopy:

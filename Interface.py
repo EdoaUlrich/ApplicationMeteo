@@ -5,17 +5,19 @@ import tkinter.ttk as tk
 from Data import *
 from VueGlobale import *
 from VueLocale import *
+from concurrent.futures import *
 # -*- coding: utf-8 -*-
 
 class Interface:
     def __init__(self):
+        self.executor = ThreadPoolExecutor(max_workers=4)
         self.root = Tk()
         self.frameAnnee = tk.Frame(self.root)
         self.frameOnglet = tk.Frame(self.root)
         self.anneeText = Label(self.frameAnnee, text="Annee: ")
         years = [str(i) for i in range(1991, 2023)]
         self.anneeCombobox = tk.Combobox(self.frameAnnee, values=years)
-        self.chargerBouton = tk.Button(self.frameAnnee, text="Charger", command=lambda:self.Charger_donnees(self.anneeCombobox.get()))
+        self.chargerBouton = tk.Button(self.frameAnnee, text="Charger", command=lambda:self.executor.submit(self.Charger_donnees, self.anneeCombobox.get()))
 
         self.vueGlobale = None
         self.vueLocale = None
@@ -38,24 +40,20 @@ class Interface:
         self.root.mainloop()
 
     def Charger_donnees(self, year):
-        print(year)
         if year != "":
             self.tmin = Data('./donnees/tmin.{}.nc'.format(year))
             self.tmax = Data('./donnees/tmax.{}.nc'.format(year))
             self.precip = Data('./donnees/precip.{}.nc'.format(year))
-            #executor = ThreadPoolExecutor(max_workers=4)
-            #tache1 = executor.submit(self.tmin.chargement_masque)
-            #tache2 = executor.submit(self.tmax.chargement_masque)
-            #tache3 = executor.submit(self.precip.chargement_masque)
+            
             if self.vueGlobale == None:
-                self.vueGlobale = VueGlobale(self.ongletVueGlobale, self.tmin, self.tmax, self.precip, year)
-                self.vueLocale = VueLocale(self.ongletCourbeLocale, self.tmin, self.tmax, self.precip, year)
+                self.vueGlobale = VueGlobale(self.ongletVueGlobale, self.tmin, self.tmax, self.precip, year, self.executor)
+                self.vueLocale = VueLocale(self.ongletCourbeLocale, self.tmin, self.tmax, self.precip, year, self.executor)
             else:
                 self.vueGlobale.parametres.destroy()
                 self.vueLocale.main.destroy()
-                self.vueGlobale = VueGlobale(self.ongletVueGlobale, self.tmin, self.tmax, self.precip, year)
-                self.vueLocale = VueLocale(self.ongletCourbeLocale, self.tmin, self.tmax, self.precip, year)
-            self.root.mainloop()
+                self.vueGlobale = VueGlobale(self.ongletVueGlobale, self.tmin, self.tmax, self.precip, year, self.executor)
+                self.vueLocale = VueLocale(self.ongletCourbeLocale, self.tmin, self.tmax, self.precip, year, self.executor)
+            
         else:
             messagebox.showerror('Erreur','Selectionnez une annee')
 

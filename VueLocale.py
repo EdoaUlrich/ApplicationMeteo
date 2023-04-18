@@ -7,6 +7,7 @@ from math import sin, cos, atan2
 import math
 import numpy as np
 import numpy.ma as ma
+from concurrent.futures import *
 
 
 class Courbes(Frame):
@@ -26,8 +27,6 @@ class Courbes(Frame):
         tailletmin = np.shape(self.tmin.vals)
         tailletmax = np.shape(self.tmax.vals)
         tailleprecip = np.shape(self.precip.vals)
-        print(self.tmin.lats[posx])
-        print(self.tmin.lons[posy])
         
         
         y1 = [self.tmin.vals[y][posx][posy] for y in range(tailletmin[0])]
@@ -49,13 +48,14 @@ class Courbes(Frame):
 
 
 class VueLocale(Frame):
-    def __init__(self, root, tmin, tmax, precip, year):
+    def __init__(self, root, tmin, tmax, precip, year, executor):
         self.tmin = tmin
         self.tmax = tmax
         self.precip = precip
         self.year = year
         self.posx = None
         self.posy = None
+        self.executor = executor
         
         self.main = Frame(root)
         self.parametres = Frame(self.main)
@@ -66,7 +66,7 @@ class VueLocale(Frame):
         self.lonText = Label(self.parametres, text="Longitude") 
         self.Latitude = Entry(self.parametres, width=10)
         self.Longitude = Entry(self.parametres)
-        self.afficher = Button(self.parametres, text="Afficher", command=lambda:self.afficher_courbes(self.Longitude.get(), self.Latitude.get()))
+        self.afficher = Button(self.parametres, text="Afficher", command=lambda:self.executor.submit(self.afficher_courbes, self.Longitude.get(), self.Latitude.get()))
 
         self.main.pack()
         self.parametres.grid()
@@ -112,7 +112,6 @@ class VueLocale(Frame):
         taille = np.shape(distances)
         dist = np.zeros(taille[0])
         k = 0
-        print(t)
         for i, lat in enumerate(self.tmin.lats):
             for j, lon in enumerate(self.tmin.lons):
                 if ma.is_masked(self.tmin.vals[0][i][j]):
@@ -124,21 +123,16 @@ class VueLocale(Frame):
                     distances[k][0] = i
                     distances[k][1] = j
                     distances[k][2] = d
-                    k+=1
-        print(k)           
+                    k+=1     
         for i in range(t):
             dist[i] = distances[i][2]
-        print(distances)
         courte_dist = np.amin(dist)
-        print(courte_dist)
         for j in range(k):
             if distances[j][2] == courte_dist:
                 self.posx = int(distances[j][0])
                 self.posy = int(distances[j][1])
-                print(distances[j][0], distances[j][1], distances[j][2])
                 break
-        
-        print(self.posx, self.posy)
+       
 
     def tester_saisie(self, longitude, latitude):
         consomne = ["abcdefghijklmnopqrstuvwxyz"]

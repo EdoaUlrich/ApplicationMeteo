@@ -9,21 +9,24 @@ import cartopy.feature as cfeature
 import matplotlib as mpl
 import numpy as np
 import numpy.ma as ma
+from concurrent.futures import *
 # -*- coding: utf-8 -*-
 
 
 class VueGlobale(Frame):
-    def __init__(self, root, tmin, tmax, precip, year): 
+    def __init__(self, root, tmin, tmax, precip, year, executor): 
         self.tmin = tmin
         self.tmax = tmax
         self.precip = precip
         self.year = year
+        self.executor = executor
 
         #Creations des Frames de l'onglet VueGlobale
         self.main = Frame(root)
         self.parametres = tk.Notebook(self.main)
         self.carteFrame = Frame(self.main)
         self.canvas = None
+        self.dateDuChoix = Frame(self.main)
         self.parJour = tk.Frame(self.parametres)
         self.parMois = tk.Frame(self.parametres)
         self.parametres.add(self.parJour, text="Par jour")
@@ -44,7 +47,7 @@ class VueGlobale(Frame):
         self.jourCombobox = tk.Combobox(self.parJour)
         self.autresRadioParJour = tk.Radiobutton(self.parJour, text="Autre :", variable=self.choixParJour, value="Autres")
         self.autresComboboxParJour = tk.Combobox(self.parJour, values=autres)
-        self.validerParJour = tk.Button(self.parJour, text="Lancer les calculs", command=lambda:self.afficher_carte_par_jour())
+        self.validerParJour = tk.Button(self.parJour, text="Lancer les calculs", command=lambda:self.executor.submit(self.afficher_carte_par_jour))
 
         #Widgets de l'onglet par Mois
         self.donneesTextParMois = Label(self.parMois, text="Donnees:")
@@ -54,7 +57,7 @@ class VueGlobale(Frame):
         self.moisComboboxParMois = tk.Combobox(self.parMois, values=mois)
         self.autresRadioParMois = tk.Radiobutton(self.parMois, text="Autre:", variable=self.choixParMois, value="Autres")
         self.autresComboboxParMois = tk.Combobox(self.parMois, values=autres)
-        self.validerParMois = Button(self.parMois, text="Lancer les calculs", command=lambda:self.afficher_carte_par_mois())
+        self.validerParMois = Button(self.parMois, text="Lancer les calculs", command=lambda:self.executor.submit(self.afficher_carte_par_mois))
         
 
         #-------------------PACK et GRID-----------------------
@@ -185,7 +188,9 @@ class VueGlobale(Frame):
             if self.canvas == None: # On teste si on avait auparavant déja affiché une carte, on detruit l'ancienne affichage si c'est le cas
                 pass
             else:
+                #self.dateDuChoix.destroy()
                 self.canvas.destroy()
+                    
             
             # On cree un dictionnaire qui permet de gérer le nombre de jour par mois
             mois_dict = {
@@ -206,7 +211,10 @@ class VueGlobale(Frame):
                 mois_dict["Fevrier"] = 29
             
             #On crée la figure qui contiendra notre carte
-            fig = plt.figure(figsize=(7,7))
+            #fig = plt.figure(figsize=(7,7))
+            #self.afficher_date_par_jour()
+
+            fig = Figure(frameon=True)
             ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
             
             if self.choixParJour.get() == "Autres":
@@ -222,15 +230,22 @@ class VueGlobale(Frame):
                 cm = ax.pcolormesh(self.tmin.lons, self.tmin.lats, self.tmin.vals[indices], cmap="jet")
             elif self.donneesComboboxParJour.get() == "Precipitations":
                 cm = ax.pcolormesh(self.precip.lons, self.precip.lats, self.precip.vals[indices], cmap="jet")
+
             
             ax.coastlines(resolution='110m')
             ax.add_feature(cfeature.OCEAN.with_scale('50m'))
             ax.add_feature(cfeature.LAND.with_scale('50m'))
             ax.add_feature(cfeature.BORDERS.with_scale('50m'))
-            plt.colorbar(cm, ax=ax, fraction=0.046, pad=0.04)
+            fig.colorbar(cm, ax=ax, fraction=0.046, pad=0.04)
             self.canvas = FigureCanvasTkAgg(fig, self.carteFrame)
             self.canvas = self.canvas.get_tk_widget()
             self.canvas.pack()
+
+    def afficher_date_par_jour(self):
+        self.jour = Label(self.dateDuChoix, text="Le {} {} {}.".format(self.jourCombobox.get(), self.moisComboboxParJour.get(), self.year))
+        self.jour.pack()
+        self.dateDuChoix.pack()
+
 
     def afficher_carte_par_mois(self): 
         if self.tester_widget_par_mois():
@@ -238,7 +253,7 @@ class VueGlobale(Frame):
                 pass
             else:
                 self.canvas.destroy()
-            fig = plt.figure(figsize=(7,7))
+            fig = Figure(figsize=(7,7))
             ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
 
             mois_dict = {
@@ -290,7 +305,7 @@ class VueGlobale(Frame):
             ax.add_feature(cfeature.OCEAN.with_scale('50m'))
             ax.add_feature(cfeature.LAND.with_scale('50m'))
             ax.add_feature(cfeature.BORDERS.with_scale('50m'))
-            plt.colorbar(cm, ax=ax, fraction=0.046, pad=0.04)
+            fig.colorbar(cm, ax=ax, fraction=0.046, pad=0.04)
             self.canvas = FigureCanvasTkAgg(fig, self.carteFrame)
             self.canvas = self.canvas.get_tk_widget()
             self.canvas.pack(fill='x')
@@ -322,7 +337,6 @@ class VueGlobale(Frame):
         avg = np.zeros((12))
         for i in range(12):
             avg[i]= np.mean(mois[i])
-        print(avg)
         #Ces conditions permettent de rechercher l'index dans avg la valeur maximales ou minimale du mois 
         if self.autresComboboxParMois.get() == "Valeurs maximales": 
             value_index = np.unravel_index(np.ma.argmax(avg), avg.shape)
@@ -338,7 +352,6 @@ class VueGlobale(Frame):
                 break
             else:
                 i += value-1
-        print(value_index)
         for key in dictionnaire.keys():
             if k == value_index[0]:
                 index = key
@@ -357,7 +370,6 @@ class VueGlobale(Frame):
             vals = self.tmin.vals
 
         taille = np.shape(vals)
-        print(taille[0])
         jour = np.zeros((taille[0], 360, 720))
         #Cette boucle permet de faire la moyenne des donnees afin d'obtenir des données par mois et non par jour 
         for i in range(taille[0]):
@@ -366,7 +378,6 @@ class VueGlobale(Frame):
         avg = np.zeros((taille[0]))
         for i in range(taille[0]):
             avg[i] = np.mean(jour[i])
-        print(avg)
         #Ces conditions permettent de rechercher l'index dans avg la valeur maximales ou minimale du mois 
         if self.autresComboboxParJour.get() == "Valeurs maximales": 
             value_index = np.unravel_index(np.ma.argmax(avg), avg.shape)
